@@ -7,6 +7,12 @@ const router = Router();
 router.post("/register", AuthController.register);
 router.post("/login", AuthController.login);
 
+// ✅ Forgot Password
+router.post("/forgot-password", AuthController.forgotPassword);
+
+// ✅ Reset Password
+router.post("/reset-password/:token", AuthController.resetPassword);
+
 router.post("/refresh", AuthController.refresh);
 router.post("/logout", AuthController.logout);
 

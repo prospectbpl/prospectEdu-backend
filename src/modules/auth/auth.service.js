@@ -2,6 +2,8 @@ import bcrypt from "bcryptjs";
 import { User } from "../users/user.model.js";
 import { verifyRefreshToken, signAccessToken, signRefreshToken } from "../../utils/jwt.js";
 import { ensureStudentProfile } from "../students/students.service.js";
+import crypto from "crypto";
+import { sendResetPasswordEmail } from "../../utils/mailer.js";
 
 export async function registerUser({ fullName, email, phone, password, role, state, city }) {
   const exists = await User.findOne({ email });
@@ -184,6 +186,7 @@ export async function logoutUser({ userId }) {
   if (!userId) return;
   await User.updateOne({ _id: userId }, { $set: { refreshTokenHash: null } });
 }
+
 export async function changePassword({ userId, oldPassword, newPassword }) {
   if (!userId) {
     const err = new Error("Unauthorized");
@@ -222,3 +225,84 @@ export async function changePassword({ userId, oldPassword, newPassword }) {
   return { success: true };
 }
 
+export async function forgotPasswordUser({ email }) {
+  const user = await User.findOne({ email }).select(
+    "+resetPasswordToken +resetPasswordExpires"
+  );
+
+  // Don't reveal whether the email exists
+  if (!user) {
+    return {
+      success: true,
+      message:
+        "If an account exists with this email, a password reset link has been sent.",
+    };
+  }
+
+  // Generate random token
+  const resetToken = crypto.randomBytes(32).toString("hex");
+
+  // Store HASHED token in database
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  user.resetPasswordToken = hashedToken;
+  user.resetPasswordExpires = Date.now() + 60 * 60 * 1000; // 1 hour
+
+  await user.save();
+
+  // Frontend URL
+  const resetUrl = `${process.env.CORS_ORIGIN}/reset-password/${resetToken}`;
+
+  await sendResetPasswordEmail({
+    to: user.email,
+    name: user.fullName,
+    resetUrl,
+  });
+
+  return {
+    success: true,
+    message:
+      "If an account exists with this email, a password reset link has been sent.",
+  };
+}
+
+export async function resetPasswordUser({ token, password }) {
+  // Hash received token
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
+
+  const user = await User.findOne({
+    resetPasswordToken: hashedToken,
+    resetPasswordExpires: { $gt: Date.now() },
+  }).select(
+    "+passwordHash +resetPasswordToken +resetPasswordExpires +refreshTokenHash"
+  );
+
+  if (!user) {
+    const err = new Error("Reset link is invalid or has expired.");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // Update password
+  user.passwordHash = await bcrypt.hash(password, 10);
+
+  // Clear reset token
+  user.resetPasswordToken = null;
+  user.resetPasswordExpires = null;
+
+  // Logout from all devices
+  user.refreshTokenHash = null;
+
+  await user.save();
+
+  return {
+    success: true,
+    message: "Password reset successful.",
+  };
+}

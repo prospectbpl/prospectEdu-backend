@@ -1,5 +1,5 @@
-import { registerSchema, loginSchema, changePasswordSchema} from "./auth.validators.js";
-import { registerUser, loginUser } from "./auth.service.js";
+import { registerSchema, loginSchema, changePasswordSchema, forgotPasswordSchema, resetPasswordSchema} from "./auth.validators.js";
+import {registerUser,loginUser , forgotPasswordUser, resetPasswordUser} from "./auth.service.js";
 import { refreshSession, logoutUser, changePassword } from "./auth.service.js";
 import { User } from "../users/user.model.js"; 
 
@@ -55,7 +55,6 @@ export async function register(req, res, next) {
   }
 }
 
-
 export async function login(req, res, next) {
   try {
     const data = loginSchema.parse(req.body);
@@ -76,6 +75,45 @@ export async function login(req, res, next) {
     next(e);
   }
 }
+
+export async function forgotPassword(req, res, next) {
+  try {
+    const data = forgotPasswordSchema.parse(req.body);
+
+    const result = await forgotPasswordUser(data);
+
+    return res.json(result);
+  } catch (e) {
+    if (e?.name === "ZodError") {
+      e.statusCode = 422;
+      e.message = e.errors?.[0]?.message || "Invalid input";
+    }
+
+    next(e);
+  }
+}
+
+export async function resetPassword(req, res, next) {
+  try {
+    const { password, confirmPassword } =
+      resetPasswordSchema.parse(req.body);
+
+    const result = await resetPasswordUser({
+      token: req.params.token,
+      password,
+    });
+
+    return res.json(result);
+  } catch (e) {
+    if (e?.name === "ZodError") {
+      e.statusCode = 422;
+      e.message = e.errors?.[0]?.message || "Invalid input";
+    }
+
+    next(e);
+  }
+}
+
 export async function refresh(req, res, next) {
   try {
     const refreshToken = req.cookies?.refreshToken;
@@ -117,6 +155,7 @@ export async function me(req, res, next) {
     next(e);
   }
 }
+
 export async function logout(req, res, next) {
   try {
     // If user is logged in, we can optionally accept Bearer token
@@ -147,6 +186,7 @@ export async function logout(req, res, next) {
     next(e);
   }
 }
+
 export async function changeMyPassword(req, res, next) {
   try {
     const { oldPassword, newPassword } = changePasswordSchema.parse(req.body);

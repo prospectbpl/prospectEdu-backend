@@ -72,6 +72,11 @@ export function createApp() {
   app.use(cookieParser());
   app.use(morgan("dev"));
 
+  app.get("/", (req, res) => {
+    res.send("Server is running prospect org 🚀");
+  });
+
+
   app.get("/health", (req, res) => res.json({ ok: true }));
 
   app.use("/api/v1/auth", authRoutes);
@@ -87,21 +92,21 @@ export function createApp() {
   app.use("/api/v1/research", researchRoutes);
   app.use("/api/v1/donations", donationRoutes);
   app.use("/api/v1/doubts", doubtRoutes);
-   app.use("/api/v1/contacts", contactRoutes);
-   app.use("/api/v1/news", newsRoutes);
+  app.use("/api/v1/contacts", contactRoutes);
+  app.use("/api/v1/news", newsRoutes);
   app.use("/api/v1/test-series", testSeriesRoutes);
   app.use("/api/v1/test-purchase", testPurchaseRoutes);
   app.use("/api/v1/blogs", blogRoutes);
- app.use("/api/v1/announcements", announcementRoutes);
- app.use("/api/v1/live-tests", liveTestsRoutes);
+  app.use("/api/v1/announcements", announcementRoutes);
+  app.use("/api/v1/live-tests", liveTestsRoutes);
   app.use("/api/v1/parentdoubts", parentDoubtRoutes);
   app.use("/api/v1/support-tickets", supportTicketRoutes);
   app.use("/api/v1/categories", categoryRoutes);
   app.use("/api/v1/payments", razorpayRoutes);
- app.use("/api/v1/careers", careerRoutes);
+  app.use("/api/v1/careers", careerRoutes);
 
-// static for resumes
-app.use("/uploads", express.static("uploads"));
+  // static for resumes
+  app.use("/uploads", express.static("uploads"));
 
 
   
@@ -129,6 +134,7 @@ app.use("/uploads", express.static("uploads"));
   app.use("/api/v1/payments", paymentsRoutes);
   app.use("/api/v1/activity", activityRoutesstudentdashboard);
   app.use("/api/v1/reports", reportsRoutes);
+  
   app.use(notFound);
   app.use(errorHandler);
   return app;

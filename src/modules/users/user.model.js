@@ -50,6 +50,18 @@ const userSchema = new Schema(
     adminApproval: approvalSchema,
 
     refreshTokenHash: { type: String, select: false, default: null },
+    resetPasswordToken: {
+      type: String,
+      default: null,
+      select: false,
+    },
+
+    resetPasswordExpires: {
+      type: Date,
+      default: null,
+      select: false,
+    },
+
 
         addresses: [
       {
